@@ -1,0 +1,47 @@
+# ===== 密钥与凭据（绝不入库）=====
+.env
+*.env
+**/.env
+!.env.example
+!**/.env.example
+agents.json
+**/agents.json
+密钥台账.md
+**/密钥台账.md
+
+# ===== 运行时数据（真实账号 / 消息 / 记忆 / 任务 / 用量）=====
+data/
+**/data/*.db
+**/data/*.sqlite*
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== 未脱敏原始报告 / 备份 =====
+reports/
+_backup-*/
+*.bak
+*.bak-*
+*.bak-stage1fix
+
+# ===== 依赖 / 构建产物 / 缓存 =====
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ===== 日志 / 运行时状态 =====
+*.log
+ops/.ops-check-state.json
+.ops-check-state.json
+
+# ===== 编辑器 / 系统 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.swp
