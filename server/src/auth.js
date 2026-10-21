@@ -2,6 +2,7 @@
 // 4.3 认证与成员（D2/D7）：register(首个即管理员)/login/me/members/approve · JWT httpOnly cookie
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const C = require('./config');
 const { db } = require('./db');
 const { nowIso, uuid, hashPassword, verifyPassword } = require('./util');
@@ -57,14 +58,30 @@ function regRateLimited() {
   return false;
 }
 
+// 邀请码校验（仅在配置了 REGISTER_INVITE_CODE 时生效）
+// 用定长比较，避免按字节提前返回泄露前缀信息
+function inviteCodeValid(given) {
+  if (!C.REGISTER_INVITE_CODE) return true;
+  const a = Buffer.from(String(given || ''), 'utf8');
+  const b = Buffer.from(C.REGISTER_INVITE_CODE, 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+// 公开信息：前端据此决定是否显示「邀请码」输入框
+router.get('/register-info', (req, res) => {
+  res.json({ invite_required: !!C.REGISTER_INVITE_CODE, mode: C.REGISTER_MODE });
+});
+
 router.post('/register', (req, res) => {
-  const { username, password, display_name } = req.body || {};
+  const { username, password, display_name, invite_code } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'username 与 password 必填' });
   if (!/^[a-zA-Z0-9_.-]{2,32}$/.test(username)) return res.status(400).json({ error: '用户名需为 2-32 位字母数字._-' });
   if (String(password).length < 6) return res.status(400).json({ error: '密码至少 6 位' });
+  if (regRateLimited()) return res.status(429).json({ error: '注册过于频繁，请稍后再试' });
+  // 邀请码放在用户名查重之前：未持码者无法借注册接口枚举已有用户名
+  if (!inviteCodeValid(invite_code)) return res.status(403).json({ error: '邀请码不正确' });
   const exists = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
   if (exists) return res.status(409).json({ error: '用户名已被注册' });
-  if (regRateLimited()) return res.status(429).json({ error: '注册过于频繁，请稍后再试' });
   const count = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
   const isFirst = count === 0;
   // 注册策略：open → 注册即 active（公开注册）；approval → pending 等管理员批准

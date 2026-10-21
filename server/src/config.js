@@ -76,6 +76,8 @@ module.exports = {
   // 全局每小时最多注册数（进程内计数，重启清零；0 = 不限制）
   REGISTER_MAX_PER_HOUR: process.env.REGISTER_MAX_PER_HOUR === undefined
     ? 20 : (+process.env.REGISTER_MAX_PER_HOUR || 0),
+  // 邀请码：设置后注册必须提供匹配的邀请码；留空则不校验（前端也不会显示该输入框）
+  REGISTER_INVITE_CODE: String(process.env.REGISTER_INVITE_CODE || ''),
 };
 
 if (!module.exports.JWT_SECRET) {

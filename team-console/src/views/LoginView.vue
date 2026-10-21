@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -9,9 +9,18 @@ const mode = ref<'login' | 'register'>('login')
 const username = ref('')
 const password = ref('')
 const displayName = ref('')
+const inviteCode = ref('')
+const inviteRequired = ref(false)
 const error = ref('')
 const notice = ref('')
 const busy = ref(false)
+
+// 切到注册页时问一次：服务端是否配置了邀请码
+watch(mode, async (m) => {
+  if (m !== 'register') return
+  const info = await auth.registerInfo()
+  inviteRequired.value = info.invite_required
+})
 
 async function submit() {
   error.value = ''; notice.value = ''; busy.value = true
@@ -20,7 +29,7 @@ async function submit() {
       await auth.login(username.value, password.value)
       router.push({ name: 'chat' })
     } else {
-      const r = await auth.register(username.value, password.value, displayName.value || username.value)
+      const r = await auth.register(username.value, password.value, displayName.value || username.value, inviteCode.value)
       if (r.pending) { notice.value = r.message; mode.value = 'login' }
       else { notice.value = r.message; await auth.login(username.value, password.value); router.push({ name: 'chat' }) }
     }
@@ -43,6 +52,7 @@ async function submit() {
       <form class="space-y-3" @submit.prevent="submit">
         <input v-model.trim="username" required placeholder="用户名" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600" />
         <input v-if="mode==='register'" v-model.trim="displayName" placeholder="显示名（可选）" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600" />
+        <input v-if="mode==='register' && inviteRequired" v-model.trim="inviteCode" :required="inviteRequired" placeholder="邀请码" autocomplete="off" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600" />
         <input v-model="password" required type="password" placeholder="密码" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600" />
         <p v-if="error" class="text-sm text-red-500">{{ error }}</p>
         <p v-if="notice" class="text-sm text-green-600">{{ notice }}</p>
