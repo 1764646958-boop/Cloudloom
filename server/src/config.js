@@ -69,6 +69,13 @@ module.exports = {
   CHAT_HISTORY_MAX_ROUNDS: +process.env.CHAT_HISTORY_MAX_ROUNDS || 12,
   // 可选：被裁掉的早期部分改由本 Agent 生成一次摘要并缓存复用（默认关；开启后每次摘要本身也要花 token）
   CHAT_SUMMARY_ENABLED: process.env.CHAT_SUMMARY_ENABLED === '1',
+  // ── 注册策略（公开注册）────────────────────────────────────────────────────
+  // open     = 公开注册，注册即成 active 并自动登录（默认）
+  // approval = 需管理员批准后才可登录（原行为，改回只需设 REGISTER_MODE=approval）
+  REGISTER_MODE: String(process.env.REGISTER_MODE || 'open').toLowerCase(),
+  // 全局每小时最多注册数（进程内计数，重启清零；0 = 不限制）
+  REGISTER_MAX_PER_HOUR: process.env.REGISTER_MAX_PER_HOUR === undefined
+    ? 20 : (+process.env.REGISTER_MAX_PER_HOUR || 0),
 };
 
 if (!module.exports.JWT_SECRET) {

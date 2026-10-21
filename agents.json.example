@@ -1,0 +1,22 @@
+{
+  "cehua": {
+    "port": 8642,
+    "api_server_key": "REPLACE_WITH_YOUR_AGENT_KEY_000000000000000000",
+    "enabled": true
+  },
+  "chengxu": {
+    "port": 8643,
+    "api_server_key": "REPLACE_WITH_YOUR_AGENT_KEY_000000000000000001",
+    "enabled": true
+  },
+  "pingshen": {
+    "port": 8644,
+    "api_server_key": "REPLACE_WITH_YOUR_AGENT_KEY_000000000000000002",
+    "enabled": true
+  },
+  "zhiban": {
+    "port": 8645,
+    "api_server_key": "REPLACE_WITH_YOUR_AGENT_KEY_000000000000000003",
+    "enabled": true
+  }
+}

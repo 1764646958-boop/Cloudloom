@@ -47,6 +47,16 @@ function adminRequired(req, res, next) {
   next();
 }
 
+// ── 注册限流：全局每小时上限（防批量注册；进程内计数，重启清零）──
+const regHits = [];
+function regRateLimited() {
+  const now = Date.now();
+  while (regHits.length && now - regHits[0] > 3600000) regHits.shift();
+  if (C.REGISTER_MAX_PER_HOUR > 0 && regHits.length >= C.REGISTER_MAX_PER_HOUR) return true;
+  regHits.push(now);
+  return false;
+}
+
 router.post('/register', (req, res) => {
   const { username, password, display_name } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'username 与 password 必填' });
@@ -54,20 +64,26 @@ router.post('/register', (req, res) => {
   if (String(password).length < 6) return res.status(400).json({ error: '密码至少 6 位' });
   const exists = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
   if (exists) return res.status(409).json({ error: '用户名已被注册' });
+  if (regRateLimited()) return res.status(429).json({ error: '注册过于频繁，请稍后再试' });
   const count = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
   const isFirst = count === 0;
+  // 注册策略：open → 注册即 active（公开注册）；approval → pending 等管理员批准
+  const status = isFirst ? 'active' : (C.REGISTER_MODE === 'open' ? 'active' : 'pending');
   const u = {
     id: uuid(), username, display_name: (display_name || username).slice(0, 32),
     pass_hash: hashPassword(password),
     role: isFirst ? 'admin' : 'member',
-    status: isFirst ? 'active' : 'pending', // D7：首个即管理员，之后需批准
+    status,
     avatar: null, notify_enabled: 1, created_at: nowIso(),
   };
   db.prepare('INSERT INTO users (id,username,display_name,pass_hash,role,status,avatar,created_at) VALUES (?,?,?,?,?,?,?,?)')
     .run(u.id, u.username, u.display_name, u.pass_hash, u.role, u.status, u.avatar, u.created_at);
-  if (isFirst) {
+  if (status === 'active') {
     setCookie(res, signToken(u));
-    return res.json({ ok: true, user: publicUser(u), message: '首个账号，已成为管理员' });
+    return res.json({
+      ok: true, user: publicUser(u),
+      message: isFirst ? '首个账号，已成为管理员' : '注册成功，已自动登录',
+    });
   }
   res.json({ ok: true, pending: true, message: '注册成功，待管理员批准后可登录' });
 });

@@ -50,7 +50,7 @@ async function submit() {
           {{ busy ? '处理中…' : (mode==='login' ? '登录' : '注册') }}
         </button>
       </form>
-      <p class="text-xs text-gray-400 mt-4 text-center">首个注册账号自动成为管理员；后续账号需管理员批准</p>
+      <p class="text-xs text-gray-400 mt-4 text-center">公开注册：注册后直接登录；首个账号自动成为管理员</p>
     </div>
   </div>
 </template>
