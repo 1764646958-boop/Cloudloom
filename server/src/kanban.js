@@ -3,7 +3,7 @@
 const express = require('express');
 const { DatabaseSync } = require('node:sqlite');
 const C = require('./config');
-const { authRequired } = require('./auth');
+const { authRequired, adminRequired } = require('./auth');
 const { callAgent } = require('./chat');
 
 const router = express.Router();
@@ -23,14 +23,16 @@ function queryKanban(status) {
   } finally { db.close(); }
 }
 
-router.get('/kanban', authRequired, (req, res) => {
+// 看板含团队内部任务（标题/正文/评论），仅管理员可读 —— 普通成员一律 403
+router.get('/kanban', authRequired, adminRequired, (req, res) => {
   try {
     res.json({ ok: true, board: C.KANBAN_DB, tasks: queryKanban(req.query.status) });
   } catch (e) { res.status(500).json({ error: '看板读取失败: ' + e.message }); }
 });
 
 // 看板写操作走 Agent 指令（kanban_* 工具），默认值班 Agent（zhiban）
-router.post('/kanban-command', authRequired, async (req, res) => {
+// 同样限管理员：该接口会真实调用 Agent（消耗额度），普通成员不应触达
+router.post('/kanban-command', authRequired, adminRequired, async (req, res) => {
   const { command, agent } = req.body || {};
   if (!command || typeof command !== 'string') return res.status(400).json({ error: 'command 必填' });
   const agentId = agent || 'zhiban';

@@ -26,6 +26,8 @@ router.beforeEach(async (to) => {
   if (!auth.loaded) await auth.fetchMe()
   if (to.name !== 'login' && !auth.user) return { name: 'login' }
   if (to.name === 'login' && auth.user) return { name: 'chat' }
+  // 看板仅管理员：直接输 URL 也拦住（后端 /api/kanban 亦返回 403）
+  if (to.name === 'kanban' && auth.user?.role !== 'admin') return { name: 'chat' }
 })
 
 export default router

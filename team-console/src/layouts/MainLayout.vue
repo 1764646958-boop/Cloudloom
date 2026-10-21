@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 主布局空壳（阶段 1）：左栏（会话区 + Agent 区）/ 主区 / 顶栏 Tab 容器
 // 移动端适配（<768px 抽屉 + Tab 置底）在阶段 3 完成（D8）
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import SideBar from '../components/SideBar.vue'
 import { notifyList, unread, lastPollAt, clearNotify, resetNotify } from '../lib/notify'
@@ -9,15 +9,17 @@ import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
-const tabs = [
+const allTabs = [
   { name: 'chat', label: '聊天' },
-  { name: 'kanban', label: '看板' },
+  { name: 'kanban', label: '看板', admin: true },
   { name: 'tasks', label: '任务' },
   { name: 'profiles', label: '画像' },
   { name: 'library', label: '资料库' },
   { name: 'memory', label: '记忆' },
   { name: 'settings', label: '设置' },
 ]
+// 看板含团队内部任务，仅管理员可见（后端 /api/kanban 同样限管理员）
+const tabs = computed(() => allTabs.filter(t => !t.admin || auth.user?.role === 'admin'))
 const drawer = ref(false)
 const bell = ref(false)
 async function logout() {
